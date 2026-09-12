@@ -1,0 +1,38 @@
+name: Test Case Quality
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: Validate manual test cases
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Check test-case structure
+        id: quality
+        run: |
+          result=$(python3 scripts/validate_test_cases.py)
+          echo "$result"
+          count=$(echo "$result" | grep -oE '[0-9]+' | head -1)
+          echo "count=$count" >> "$GITHUB_OUTPUT"
+      - name: Publish case count
+        run: |
+          {
+            echo "## Manual test-case quality"
+            echo
+            echo "### ✅ ${{ steps.quality.outputs.count }} cases validated"
+            echo
+            echo "All discovered cases have unique IDs, traceable requirements, metadata, preconditions, numbered steps and expected results."
+          } >> "$GITHUB_STEP_SUMMARY"
